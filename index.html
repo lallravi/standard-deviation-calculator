@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Standard Deviation Calculator (Light Theme + Large Formulas)</title>
+  <style>
+    :root {
+      /* Light theme palette */
+      --bg: #f7fafc;
+      --panel: #ffffff;
+      --muted: #4b5563;
+      --text: #111827;
+      --accent: #0ea5e9;
+      --accent-2: #7c3aed;
+      --error: #b91c1c;
+      --good: #16a34a;
+      --card: #ffffff;
+      --code: #f3f4f6;
+      --border: #e5e7eb;
+      --shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
+      min-height: 100%;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    .container {
+      max-width: 980px; margin: 0 auto; padding: 24px 16px 90px;
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 10px 0 24px;
+    }
+    .title { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: conic-gradient(from 180deg at 50% 50%, #38bdf8, #a78bfa, #38bdf8);
+      position: relative; box-shadow: var(--shadow);
+    }
+    .logo::after {
+      content: ""; position: absolute; inset: 3px; border-radius: 10px; background: radial-gradient(120px 60px at 70% 10%, rgba(255,255,255,0.6), transparent), linear-gradient(145deg, #ffffff, #f3f4f6);
+    }
+    h1 { font-size: 1.6rem; margin: 0; line-height: 1.2; }
+    .sub { color: var(--muted); font-size: 0.98rem; margin-top: 2px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 18px; box-shadow: var(--shadow);
+    }
+    .stack { display: grid; gap: 14px; }
+    .row { display: grid; gap: 12px; grid-template-columns: 1fr; }
+    @media (min-width: 720px) {
+      .row-2 { grid-template-columns: 1fr 1fr; align-items: end; }
+      .row-3 { grid-template-columns: 2fr 1fr 1fr; align-items: end; }
+    }
+
+    textarea, input, select, button {
+      width: 100%; padding: 12px 12px; border-radius: 12px; border: 1px solid var(--border);
+      background: #ffffff; color: var(--text); font-size: 1rem; outline: none;
+      transition: border-color .15s, box-shadow .15s, transform .04s ease;
+    }
+    textarea { min-height: 130px; resize: vertical; }
+    textarea::placeholder, input::placeholder { color: #9ca3af; }
+    textarea:focus, input:focus, select:focus {
+      border-color: #bfdbfe; box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.15);
+    }
+    button {
+      background: linear-gradient(180deg, #38bdf8, #0ea5e9); border: none; color: #002c3e; font-weight: 700; letter-spacing: .2px;
+      box-shadow: 0 10px 24px rgba(14, 165, 233, 0.25);
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.04); }
+    button:active { transform: translateY(1px); }
+    .btn-secondary {
+      background: linear-gradient(180deg, #ffffff, #f3f4f6); color: #111827; border: 1px solid var(--border);
+      box-shadow: none;
+    }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .error { color: var(--error); font-size: 0.98rem; }
+    .good { color: var(--good); }
+
+    .steps {
+      display: grid; gap: 10px; grid-auto-flow: column; align-items: center; width: 100%; overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .step {
+      display: flex; align-items: center; gap: 10px; min-width: 180px;
+      background: #ffffff; border: 1px dashed #d1d5db; border-radius: 12px; padding: 10px 12px;
+      color: var(--muted);
+    }
+    .step.active { border-style: solid; border-color: #60a5fa; color: #111827; background: #f8fafc; }
+    .step .badge {
+      width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-weight: 700;
+      background: #ffffff; border: 1px solid #d1d5db; color: #374151;
+    }
+    .step.active .badge {
+      background: linear-gradient(180deg, #a78bfa, #38bdf8); color: #062135; border: none;
+    }
+
+    .data-grid {
+      width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 12px; border: 1px solid var(--border);
+      background: #ffffff;
+    }
+    .data-grid th, .data-grid td {
+      padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .data-grid th { text-align: left; color: #1f2937; background: #f3f4f6; }
+    .data-grid tr:last-child td { border-bottom: none; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    /* Equation block — large, neat, and readable */
+    .eqn {
+      border-left: 4px solid #c7d2fe;
+      padding: 16px 14px;
+      background: #f8fafc;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      line-height: 1.6;
+      box-shadow: inset 0 1px 0 rgba(0,0,0,0.03);
+      color: #0f172a;
+    }
+    /* Big formulas for visibility */
+    .eqn .formula {
+      font-size: clamp(1.25rem, 2.4vw + 0.6rem, 2rem);
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      display: block;
+      margin: 8px 0;
+      white-space: pre-wrap;
+    }
+    .eqn .subformula {
+      font-size: clamp(1.05rem, 1.6vw + 0.4rem, 1.5rem);
+      font-weight: 500;
+      color: #334155;
+      display: block;
+      margin: 6px 0;
+      white-space: pre-wrap;
+    }
+    .eqn kbd {
+      font-family: inherit;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .pill {
+      display: inline-flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: #ffffff; color: #111827;
+    }
+    .muted { color: var(--muted); }
+    .right { text-align: right; }
+    .center { text-align: center; }
+    .mt-1 { margin-top: 6px; }
+    .mt-2 { margin-top: 12px; }
+    .mt-3 { margin-top: 18px; }
+    .mt-4 { margin-top: 24px; }
+    .mt-6 { margin-top: 36px; }
+    .small { font-size: 0.95rem; }
+    .foot { color: #4b5563; font-size: 0.95rem; margin-top: 28px; }
+
+    .sticky-footer {
+      position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(6px);
+      border-top: 1px solid var(--border); padding: 10px 14px;
+    }
+    .footer-bar {
+      max-width: 980px; margin: 0 auto; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    }
+    .kbd {
+      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono";
+      background: #f3f4f6; border: 1px solid #e5e7eb; padding: 2px 6px; border-radius: 6px;
+    }
+    .scroll { overflow-x: auto; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Standard Deviation Calculator</h1>
+          <div class="sub">Enter data, review the dataset and mean, then see step-by-step SD math with large, readable formulas.</div>
+        </div>
+      </div>
+      <div class="pill small" title="Keyboard tips">
+        <span>CSV / space / newline separated</span>
+      </div>
+    </header>
+
+    <div class="stack">
+      <div class="steps" role="tablist" aria-label="Steps">
+        <div class="step active" id="s1"><div class="badge" aria-hidden="true">1</div><div>Input Data</div></div>
+        <div class="step" id="s2"><div class="badge" aria-hidden="true">2</div><div>Data Table & Mean</div></div>
+        <div class="step" id="s3"><div class="badge" aria-hidden="true">3</div><div>Std. Deviation Math</div></div>
+      </div>
+
+      <!-- Step 1: Input -->
+      <section class="card" id="step1" aria-labelledby="s1">
+        <div class="stack">
+          <label for="data"><strong>Paste or type your numbers</strong></label>
+          <textarea id="data" placeholder="Examples:
+1, 2, 3, 4, 5
+12 15 18 20
+3
+4
+7
+7.5
+-2" aria-describedby="inputHelp"></textarea>
+          <div id="inputHelp" class="small muted">
+            Separate values with commas, spaces, or newlines. Non-numeric tokens are ignored.
+          </div>
+
+          <div class="row row-3">
+            <div>
+              <label for="dtype" class="small muted">Deviation type</label>
+              <select id="dtype" aria-label="Deviation type">
+                <option value="sample">Sample SD (n−1)</option>
+                <option value="population">Population SD (n)</option>
+              </select>
+            </div>
+            <div>
+              <label for="precision" class="small muted">Decimals</label>
+              <input id="precision" type="number" min="0" max="12" step="1" value="4" />
+            </div>
+            <div>
+              <label class="small muted">Actions</label>
+              <div class="toolbar">
+                <button id="btnDemo" type="button" class="btn-secondary">Fill demo data</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row row-2">
+            <div class="toolbar">
+              <button id="btnClean" type="button" class="btn-secondary">Clean & parse</button>
+              <button id="btnNext1" type="button">Next: Table & Mean →</button>
+            </div>
+            <div class="right small muted">
+              Tip: Use a decimal point (.) for decimals.
+            </div>
+          </div>
+          <div id="err1" class="error hidden" role="alert"></div>
+        </div>
+      </section>
+
+      <!-- Step 2: Data table & mean -->
+      <section class="card hidden" id="step2" aria-labelledby="s2">
+        <div class="stack">
+          <div class="row row-2">
+            <div>
+              <strong>Dataset</strong>
+              <div class="small muted mt-1">Count n = <span id="n"></span></div>
+            </div>
+            <div class="right">
+              <span class="pill small">Type: <span id="dtypeLabel"></span></span>
+            </div>
+          </div>
+
+          <div class="scroll" role="region" aria-label="Parsed data table">
+            <table class="data-grid mono" id="dataTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th class="right">xᵢ</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr>
+                  <td><strong>Sum</strong></td>
+                  <td class="right" id="sum"></td>
+                </tr>
+                <tr>
+                  <td><strong>Mean x̄/μ</strong></td>
+                  <td class="right" id="mean"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Big, neat mean formulas -->
+          <div class="eqn" aria-live="polite">
+            <span class="formula" id="meanEqnLine1"></span>
+            <span class="subformula" id="meanEqnLine2"></span>
+            <span class="subformula" id="meanEqnLine3"></span>
+          </div>
+          <div class="small muted mt-1">Mean rounding uses your chosen decimal precision for display only.</div>
+
+          <div class="row row-2 mt-3">
+            <div class="toolbar">
+              <button id="btnBack2" type="button" class="btn-secondary">← Back</button>
+            </div>
+            <div class="right">
+              <button id="btnNext2" type="button">Next: Standard Deviation →</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 3: SD math -->
+      <section class="card hidden" id="step3" aria-labelledby="s3">
+        <div class="stack">
+          <div class="row row-2">
+            <div>
+              <strong>Standard Deviation</strong>
+              <div class="small muted mt-1">Using <span id="dtypeLabel2"></span></div>
+            </div>
+            <div class="right">
+              <span class="pill small">n = <span id="n2"></span></span>
+            </div>
+          </div>
+
+          <div class="scroll" role="region" aria-label="Deviation calculations table">
+            <table class="data-grid mono" id="calcTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th class="right">xᵢ</th>
+                  <th class="right">xᵢ − mean</th>
+                  <th class="right">(xᵢ − mean)²</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3"><strong>Σ (xᵢ − mean)²</strong></td>
+                  <td class="right" id="sumSq"></td>
+                </tr>
+                <tr>
+                  <td colspan="3"><strong>Variance</strong></td>
+                  <td class="right" id="variance"></td>
+                </tr>
+                <tr>
+                  <td colspan="3"><strong>Standard Deviation</strong></td>
+                  <td class="right" id="sd"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Big, neat SD formulas -->
+          <div class="eqn" aria-live="polite">
+            <span class="formula" id="sdEqnLine1"></span>
+            <span class="subformula" id="sdEqnLine2"></span>
+            <span class="subformula" id="sdEqnLine3"></span>
+            <span class="subformula" id="sdEqnLine4"></span>
+          </div>
+
+          <div class="row row-2 mt-3">
+            <div class="toolbar">
+              <button id="btnBack3" type="button" class="btn-secondary">← Back</button>
+              <button id="btnCopy" type="button" class="btn-secondary">Copy results</button>
+              <button id="btnDownload" type="button" class="btn-secondary">Download CSV</button>
+            </div>
+            <div class="right">
+              <button id="btnRestart" type="button">Start over</button>
+            </div>
+          </div>
+
+          <div class="foot">
+            Notes:
+            <ul>
+              <li>Sample SD divides by n−1. Population SD divides by n.</li>
+              <li>Requires at least 2 values for sample SD and 1 for population SD.</li>
+              <li>All computations use full precision; rounding is for display.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="sticky-footer" role="contentinfo">
+    <div class="footer-bar">
+      <div class="small muted">
+        Keyboard: Press Enter with Ctrl/⌘ to go to the next step. Use Tab to navigate.
+      </div>
+      <div class="small">
+        <span class="kbd">sample</span> vs <span class="kbd">population</span>, shows equations.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let DATA = [];
+    let TYPE = 'sample'; // 'sample' | 'population'
+    let PREC = 4;
+
+    // Elements helper
+    const el = (id) => document.getElementById(id);
+
+    // Sections
+    const step1 = el('step1');
+    const step2 = el('step2');
+    const step3 = el('step3');
+    const s1 = el('s1'); const s2 = el('s2'); const s3 = el('s3');
+
+    // Inputs
+    const dataArea = el('data');
+    const dtypeSel = el('dtype');
+    const precisionInput = el('precision');
+
+    // Errors
+    const err1 = el('err1');
+
+    // Step toggle
+    function setActive(stepNum) {
+      [s1, s2, s3].forEach((node, i) => node.classList.toggle('active', i === stepNum - 1));
+      [step1, step2, step3].forEach((node, i) => node.classList.toggle('hidden', i !== stepNum - 1));
+    }
+
+    // Parsing
+    function parseNumbers(text) {
+      const tokens = text
+        .replace(/[;\n\r,\t]+/g, ' ')
+        .split(' ')
+        .map(t => t.trim())
+        .filter(Boolean);
+      const nums = [];
+      const bad = [];
+      for (const t of tokens) {
+        const v = Number(t);
+        if (Number.isFinite(v)) nums.push(v);
+        else bad.push(t);
+      }
+      return { nums, bad };
+    }
+
+    // Math helpers
+    function sum(arr) { return arr.reduce((a, b) => a + b, 0); }
+    function mean(arr) { return arr.length ? sum(arr) / arr.length : NaN; }
+    function variance(arr, type) {
+      if (arr.length === 0) return NaN;
+      const m = mean(arr);
+      const ss = arr.reduce((acc, x) => acc + (x - m) ** 2, 0);
+      const denom = type === 'sample' ? (arr.length - 1) : arr.length;
+      if (type === 'sample' && arr.length < 2) return NaN;
+      return ss / denom;
+    }
+    function stddev(arr, type) {
+      const v = variance(arr, type);
+      return Math.sqrt(v);
+    }
+
+    // Formatting
+    function fmt(x, p = PREC) {
+      if (!Number.isFinite(x)) return String(x);
+      const abs = Math.abs(x);
+      const useExp = abs !== 0 && (abs >= 1e9 || abs < 1e-6);
+      return useExp ? x.toExponential(p) : x.toLocaleString(undefined, { maximumFractionDigits: p, minimumFractionDigits: 0 });
+    }
+
+    // Renders
+    function renderStep2() {
+      el('dtypeLabel').textContent = TYPE === 'sample' ? 'Sample (n−1)' : 'Population (n)';
+      el('n').textContent = DATA.length.toString();
+
+      // Table
+      const tbody = el('dataTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      DATA.forEach((x, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i + 1}</td><td class="right">${fmt(x)}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      const s = sum(DATA);
+      const m = mean(DATA);
+
+      el('sum').textContent = fmt(s);
+      el('mean').textContent = fmt(m);
+
+      // Big, line-by-line mean formula
+      const numer = DATA.map(x => fmt(x)).join(' + ') || '—';
+      const denom = DATA.length;
+      const symbol = TYPE === 'sample' ? 'x̄' : 'μ';
+      // Line 1: symbolic formula
+      el('meanEqnLine1').textContent = `${symbol} = (x₁ + x₂ + ⋯ + xₙ) / n`;
+      // Line 2: substituted numbers
+      el('meanEqnLine2').textContent = `${symbol} = ( ${numer} ) / ${denom}`;
+      // Line 3: computed result
+      el('meanEqnLine3').textContent = `${symbol} = ${fmt(s)} / ${denom} = ${fmt(m)}`;
+    }
+
+    function renderStep3() {
+      el('dtypeLabel2').textContent = TYPE === 'sample' ? 'Sample SD (divide by n−1)' : 'Population SD (divide by n)';
+      el('n2').textContent = DATA.length.toString();
+
+      const m = mean(DATA);
+      const diffs = DATA.map(x => x - m);
+      const sq = diffs.map(d => d ** 2);
+      const ss = sum(sq);
+      const denom = TYPE === 'sample' ? (DATA.length - 1) : DATA.length;
+      const vari = ss / denom;
+      const sd = Math.sqrt(vari);
+
+      // Table
+      const tbody = el('calcTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      DATA.forEach((x, i) => {
+        const d = x - m;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td class="right">${fmt(x)}</td>
+          <td class="right">${fmt(d)}</td>
+          <td class="right">${fmt(d * d)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      el('sumSq').textContent = fmt(ss);
+      el('variance').textContent = fmt(vari);
+      el('sd').textContent = fmt(sd);
+
+      // Symbols
+      const meanSymbol = TYPE === 'sample' ? 'x̄' : 'μ';
+      const varSymbol = TYPE === 'sample' ? 's²' : 'σ²';
+      const sdSymbol = TYPE === 'sample' ? 's' : 'σ';
+      const denomText = TYPE === 'sample' ? 'n − 1' : 'n';
+
+      // Big, line-by-line SD + variance formulas
+      // Line 1: general variance formula
+      el('sdEqnLine1').textContent = `${varSymbol} = Σ(xᵢ − ${meanSymbol})² / ${denomText}`;
+      // Line 2: substituted with numbers for sum of squares
+      const parts = DATA.map(x => `(${fmt(x)} − ${fmt(m)})²`);
+      el('sdEqnLine2').textContent = `${varSymbol} = [ ${parts.join(' + ')} ] / ${denomText}`;
+      // Line 3: show Σ and variance numeric
+      el('sdEqnLine3').textContent = `${varSymbol} = ${fmt(ss)} / ${denomText === 'n' ? DATA.length : (DATA.length - 1)} = ${fmt(vari)}`;
+      // Line 4: SD from variance
+      el('sdEqnLine4').textContent = `${sdSymbol} = √(${varSymbol}) = √(${fmt(vari)}) = ${fmt(sd)}`;
+    }
+
+    // Validation for step 2
+    function validateForStep2() {
+      err1.classList.add('hidden');
+      const { nums } = parseNumbers(dataArea.value);
+      TYPE = dtypeSel.value;
+      PREC = Math.max(0, Math.min(12, Number(precisionInput.value || 4)));
+      if (nums.length === 0) {
+        err1.textContent = 'Please enter at least one numeric value.';
+        err1.classList.remove('hidden');
+        return false;
+      }
+      if (TYPE === 'sample' && nums.length < 2) {
+        err1.textContent = 'Sample standard deviation requires at least 2 values.';
+        err1.classList.remove('hidden');
+        return false;
+      }
+      DATA = nums;
+      return true;
+    }
+
+    // CSV download
+    function downloadCSV() {
+      const m = mean(DATA);
+      const rows = [['i','x_i','x_i - mean','(x_i - mean)^2']];
+      DATA.forEach((x, i) => {
+        const d = x - m;
+        rows.push([i+1, x, d, d*d]);
+      });
+      const ss = rows.slice(1).reduce((a, r) => a + Number(r[3]), 0);
+      const denom = TYPE === 'sample' ? (DATA.length - 1) : DATA.length;
+      const vari = ss / denom;
+      const sd = Math.sqrt(vari);
+      rows.push([]);
+      rows.push(['sum_sq', ss]);
+      rows.push(['variance', vari]);
+      rows.push(['sd', sd]);
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sd_calculation.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Copy results
+    function copyResults() {
+      const m = mean(DATA);
+      const diffs = DATA.map(x => x - m);
+      const ss = diffs.reduce((a, d) => a + d*d, 0);
+      const denom = TYPE === 'sample' ? (DATA.length - 1) : DATA.length;
+      const vari = ss / denom;
+      const sd = Math.sqrt(vari);
+      const meanSymbol = TYPE === 'sample' ? 'x̄' : 'μ';
+      const varSymbol = TYPE === 'sample' ? 's²' : 'σ²';
+      const sdSymbol = TYPE === 'sample' ? 's' : 'σ';
+
+      const text = [
+        `Type: ${TYPE === 'sample' ? 'Sample (n−1)' : 'Population (n)'}`,
+        `n = ${DATA.length}`,
+        `Data: ${DATA.join(', ')}`,
+        `Mean ${meanSymbol} = ${m}`,
+        `Σ(xᵢ − ${meanSymbol})² = ${ss}`,
+        `Variance ${varSymbol} = ${vari}`,
+        `Standard deviation ${sdSymbol} = ${sd}`
+      ].join('\n');
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Results copied to clipboard.');
+      }).catch(() => {
+        alert('Copy failed. Your browser may block clipboard access.');
+      });
+    }
+
+    // Events
+    document.getElementById('btnDemo').addEventListener('click', () => {
+      dataArea.value = '12, 15, 18, 18, 20, 22, 25';
+    });
+    document.getElementById('btnClean').addEventListener('click', () => {
+      const { nums, bad } = parseNumbers(dataArea.value);
+      dataArea.value = nums.join(', ');
+      err1.classList.add('hidden');
+      if (bad.length) {
+        err1.textContent = `Ignored non-numeric tokens: ${bad.slice(0, 8).join(', ')}${bad.length > 8 ? ' …' : ''}`;
+        err1.classList.remove('hidden');
+      }
+    });
+    document.getElementById('btnNext1').addEventListener('click', () => {
+      if (!validateForStep2()) return;
+      setActive(2);
+      renderStep2();
+    });
+    document.getElementById('btnBack2').addEventListener('click', () => {
+      setActive(1);
+    });
+    document.getElementById('btnNext2').addEventListener('click', () => {
+      setActive(3);
+      renderStep3();
+    });
+    document.getElementById('btnBack3').addEventListener('click', () => {
+      setActive(2);
+      renderStep2();
+    });
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      DATA = [];
+      dataArea.value = '';
+      setActive(1);
+      err1.classList.add('hidden');
+    });
+    document.getElementById('btnCopy').addEventListener('click', copyResults);
+    document.getElementById('btnDownload').addEventListener('click', downloadCSV);
+
+    dtypeSel.addEventListener('change', () => {
+      TYPE = dtypeSel.value;
+    });
+    precisionInput.addEventListener('change', () => {
+      const v = Number(precisionInput.value || 4);
+      PREC = Math.max(0, Math.min(12, v));
+      precisionInput.value = String(PREC);
+    });
+
+    // Keyboard: Ctrl/Cmd+Enter to advance
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (!step1.classList.contains('hidden')) {
+          if (!validateForStep2()) return;
+          setActive(2); renderStep2();
+        } else if (!step2.classList.contains('hidden')) {
+          setActive(3); renderStep3();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
